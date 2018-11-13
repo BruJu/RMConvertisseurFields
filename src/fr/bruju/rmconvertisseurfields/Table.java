@@ -7,16 +7,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 public class Table {
+	private Contenu header;
 	private List<Contenu> contenus;
 
 	public Table() {
 		this.contenus = new ArrayList<>();
 	}
+	
 
 	public void ajouterContenu(Contenu contenu) {
-		contenus.add(contenu);
+		if (header == null && contenu.estUnHeader()) {
+			header = contenu;
+		} else {
+			contenus.add(contenu);
+		}
 	}
 
 	public void transformerContenu(Consumer<Contenu> modificateur) {
@@ -45,5 +52,27 @@ public class Table {
 		}
 
 		return sj.toString();
+	}
+	
+	public int getNumeroChamp(String nomChamp) {
+		return header.getPositionChamp(nomChamp);
+	}
+	
+	
+	public void modifierChamp(String nomChamp, UnaryOperator<String> fonctionDeRemplacement) {
+		int idChamp = getNumeroChamp(nomChamp);
+		
+		for (Contenu contenu : contenus) {
+			contenu.remplacerDonnee(idChamp, fonctionDeRemplacement.apply(contenu.getDonnee(idChamp)));
+		}
+	}
+
+
+	public void retirerChamp(String nomChamp) {
+		int idChamp = getNumeroChamp(nomChamp);
+		
+		for (Contenu contenu : contenus) {
+			contenu.retirerDonnee(idChamp);
+		}		
 	}
 }

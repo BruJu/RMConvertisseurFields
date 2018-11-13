@@ -9,6 +9,18 @@ public class Contenu {
 	private final List<String> donnees;
 	private final int id;
 	private final boolean estUnCommentaire;
+	
+	public String getDonnee(int numero) {
+		return donnees.get(numero);
+	}
+	
+	public void remplacerDonnee(int numero, String valeur) {
+		donnees.set(numero, valeur);
+	}
+	
+	public void retirerDonnee(int numero) {
+		donnees.remove(numero);
+	}
 
 	public Contenu(List<String> donnees) {
 		if (donnees.get(0).startsWith("#")) {
@@ -42,5 +54,19 @@ public class Contenu {
 
 	public int getId() {
 		return id;
+	}
+
+	public boolean estUnHeader() {
+		return estUnCommentaire;
+	}
+
+	public int getPositionChamp(String nomChamp) {
+		for (int i = 0 ; i != donnees.size() ; i++) {
+			if (donnees.get(i).equals(nomChamp)) {
+				return i;
+			}
+		}
+		
+		return -1;
 	}
 }
