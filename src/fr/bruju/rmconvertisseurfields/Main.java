@@ -1,5 +1,7 @@
 package fr.bruju.rmconvertisseurfields;
 
+import fr.bruju.rmconvertisseurfields.operateur.IntegrationSizeField;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -14,8 +16,13 @@ public class Main {
 
 	public static void main(String[] args) {
 		Table table = new Table();
+		remplirTable(table, CHEMIN_SOURCE);
+		appliquerChaineDeTraitements(table);
+		table.ecrire(CHEMIN_DESTINATION);
+	}
 
-		try (Stream<String> flux = Files.lines(Paths.get(CHEMIN_SOURCE))) {
+	private static void remplirTable(Table table, String cheminSource) {
+		try (Stream<String> flux = Files.lines(Paths.get(cheminSource))) {
 			flux.forEach(ligne -> {
 				Contenu contenu = creerContenu(ligne);
 
@@ -26,14 +33,13 @@ public class Main {
 		} catch (IOException e) {
 			System.exit(1);
 		}
+	}
 
+	private static void appliquerChaineDeTraitements(Table table) {
 		table.retirerChamp("PersistIfDefault");
 		table.retirerChamp("Is2k3");
 		table.ajouterLigne();
-
-
-		table.transformerContenu(Main::transformerSizeField);
-
+		table.appliquerOperateur(new IntegrationSizeField());
 		table.insererChampApres("Type", "Disposition");
 		table.modifierChamp("Default Value", Main::retirerDefautRm2k);
 
@@ -42,17 +48,8 @@ public class Main {
 
 		table.transformerContenu(Main::enleverRef);
 		table.transformerContenu(Main::enleverEnum);
-		table.transformerContenu(contenu -> remplacer(contenu, "ItemAnimation:Ref<Actor>", "Int32"));
 
-
-
-		table.ecrire(CHEMIN_DESTINATION);
-	}
-
-	private static void remplacer(Contenu contenu, String s, String s2) {
-		if (contenu.getDonnees().get(3).equals(s)) {
-			contenu.getDonnees().set(3, s2);
-		}
+		table.modifierChamp("Type", chaine -> chaine.equals("ItemAnimation:Ref<Actor>") ? "Int32" : chaine);
 	}
 
 	private static void enleverEnum(Contenu contenu) {
@@ -93,14 +90,6 @@ public class Main {
 
 		contenu.getDonnees().set(3, nomType);
 		contenu.getDonnees().set(4, disposition);
-	}
-
-	private static void transformerSizeField(Contenu contenu) {
-		boolean estSizeField = contenu.getDonnees().remove(3).equals("t");
-
-		if (estSizeField) {
-			contenu.getDonnees().set(3, "SizeField");
-		}
 	}
 
 

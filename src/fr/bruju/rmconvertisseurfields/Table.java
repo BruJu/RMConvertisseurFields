@@ -1,5 +1,8 @@
 package fr.bruju.rmconvertisseurfields;
 
+import fr.bruju.rmconvertisseurfields.operateur.IntegrationSizeField;
+import fr.bruju.rmconvertisseurfields.operateur.Operateur;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -102,6 +105,14 @@ public class Table {
 
 		for (Contenu contenu : contenus) {
 			contenu.inserer(idChamp, "");
+		}
+	}
+
+	public void appliquerOperateur(Operateur operateur) {
+		operateur.lireHeader(header);
+
+		for (Contenu contenu : contenus) {
+			operateur.appliquerAContenu(contenu);
 		}
 	}
 }
