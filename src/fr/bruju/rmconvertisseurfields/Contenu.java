@@ -69,4 +69,12 @@ public class Contenu {
 		
 		return -1;
 	}
+
+	public void inserer(int idCase, String contenu) {
+		donnees.add(idCase, contenu);
+	}
+
+	public int nombreDeColonnes() {
+		return donnees.size();
+	}
 }

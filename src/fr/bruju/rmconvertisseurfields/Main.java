@@ -27,11 +27,16 @@ public class Main {
 			System.exit(1);
 		}
 
-		table.transformerContenu(Main::enleverPersistEtis2k3);
-		table.transformerContenu(Main::ajouterUnChampAuDebut);
+		table.retirerChamp("PersistIfDefault");
+		table.retirerChamp("Is2k3");
+		table.ajouterLigne();
+
+
 		table.transformerContenu(Main::transformerSizeField);
-		table.transformerContenu(Main::creerDisposition);
-		table.transformerContenu(Main::retirerDefautRm2k);
+
+		table.insererChampApres("Type", "Disposition");
+		table.modifierChamp("Default Value", Main::retirerDefautRm2k);
+
 		table.transformerContenu(contenu -> disposer(contenu, "Vector", "Vector"));
 		table.transformerContenu(contenu -> disposer(contenu, "Array", "Array"));
 
@@ -90,15 +95,6 @@ public class Main {
 		contenu.getDonnees().set(4, disposition);
 	}
 
-	private static void enleverPersistEtis2k3(Contenu contenu) {
-		contenu.getDonnees().remove(6);
-		contenu.getDonnees().remove(6);
-	}
-
-	private static void ajouterUnChampAuDebut(Contenu contenu) {
-		contenu.getDonnees().add(0, Integer.toString(contenu.getId()));
-	}
-
 	private static void transformerSizeField(Contenu contenu) {
 		boolean estSizeField = contenu.getDonnees().remove(3).equals("t");
 
@@ -108,27 +104,16 @@ public class Main {
 	}
 
 
-	private static void retirerDefautRm2k(Contenu contenu) {
-		String defaut = contenu.getDonnees().get(6);
-
+	private static String retirerDefautRm2k(String defaut) {
 		if (defaut.contains("|")) {
 			defaut = defaut.split("\\|")[1];
-			contenu.getDonnees().set(6, defaut);
 		}
 
+		return defaut;
 	}
 
-	private static void creerDisposition(Contenu contenu) {
-		contenu.getDonnees().add(4, "");
-	}
 
 	private static Contenu creerContenu(String ligne) {
-		/*
-		if (ligne.startsWith("#")) {
-			return null;
-		}
-
-*/
 		String[] champs = ligne.split(",");
 
 		List<String> donnees = new ArrayList<>();

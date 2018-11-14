@@ -27,6 +27,7 @@ public class Table {
 	}
 
 	public void transformerContenu(Consumer<Contenu> modificateur) {
+		modificateur.accept(header);
 		contenus.forEach(modificateur::accept);
 	}
 
@@ -46,6 +47,8 @@ public class Table {
 
 	private String serialiser() {
 		StringJoiner sj = new StringJoiner("\n");
+
+		sj.add(header.serialiser());
 
 		for (Contenu contenu : contenus) {
 			sj.add(contenu.serialiser());
@@ -70,9 +73,35 @@ public class Table {
 
 	public void retirerChamp(String nomChamp) {
 		int idChamp = getNumeroChamp(nomChamp);
-		
+
+		header.retirerDonnee(idChamp);
+
 		for (Contenu contenu : contenus) {
 			contenu.retirerDonnee(idChamp);
-		}		
+		}
+	}
+
+	public void ajouterLigne() {
+		header.inserer(0, "Ligne");
+
+		for (Contenu contenu : contenus) {
+			contenu.inserer(0, Integer.toString(contenu.getId()));
+		}
+	}
+
+	public void insererChampApres(String colonneAvant, String nouvelleColonne) {
+		int idChamp;
+
+		if (colonneAvant == null) {
+			idChamp = 0;
+		} else {
+			idChamp = getNumeroChamp(colonneAvant) + 1;
+		}
+
+		header.inserer(idChamp, nouvelleColonne);
+
+		for (Contenu contenu : contenus) {
+			contenu.inserer(idChamp, "");
+		}
 	}
 }
