@@ -34,8 +34,12 @@ public class Remplaceur implements Operateur {
 		DoubleString substitution = substitutions.remove(cle);
 
 		if (substitution != null) {
-			contenu.remplacerDonnee(posType, substitution.a);
-			contenu.remplacerDonnee(posDisposition, substitution.b);
+			if (!substitution.decrementerResistance()) {
+				substitutions.put(cle, substitution);
+			} else {
+				contenu.remplacerDonnee(posType, substitution.a);
+				contenu.remplacerDonnee(posDisposition, substitution.b);
+			}
 		}
 	}
 }

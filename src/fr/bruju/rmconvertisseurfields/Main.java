@@ -69,8 +69,8 @@ public class Main {
 		DoubleString.ajouter(substitutions, "Database", "commoneventD2", "Int32", "");
 		DoubleString.ajouter(substitutions, "Database", "commoneventD3", "Int32", "");
 		DoubleString.ajouter(substitutions, "Database", "classD1", "Int32", "");
-		DoubleString.ajouter(substitutions, "MoveRoute", "move_commands", "MoveCommand", "");
-		DoubleString.ajouter(substitutions, "SaveSystem", "variables", "Int32LittleEndian", "Vector");
+		DoubleString.ajouter(substitutions, "MoveRoute", "move_commands", "MoveCommand", "", 1);
+		DoubleString.ajouter(substitutions, "SaveSystem", "variables", "Int32LittleEndian", "Vector", 1);
 
 		DoubleString.ajouter(substitutions, "EventCommand", "parameters", "Int32", "List");
 
