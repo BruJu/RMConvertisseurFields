@@ -1,12 +1,14 @@
 package fr.bruju.rmconvertisseurfields;
 
-import fr.bruju.rmconvertisseurfields.operateur.IntegrationSizeField;
+import fr.bruju.rmconvertisseurfields.operateur.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 public class Main {
@@ -43,53 +45,45 @@ public class Main {
 		table.insererChampApres("Type", "Disposition");
 		table.modifierChamp("Default Value", Main::retirerDefautRm2k);
 
-		table.transformerContenu(contenu -> disposer(contenu, "Vector", "Vector"));
-		table.transformerContenu(contenu -> disposer(contenu, "Array", "Array"));
+		table.appliquerOperateur(new Detemplateur("Vector", new DetemplateurDisposeur("Vector")));
+		table.appliquerOperateur(new Detemplateur("Array", new DetemplateurDisposeur("Array")));
 
-		table.transformerContenu(Main::enleverRef);
-		table.transformerContenu(Main::enleverEnum);
+		table.appliquerOperateur(new Detemplateur("Enum", d -> { d.type = "Int32"; }));
+		table.appliquerOperateur(new Detemplateur("Ref", new DetemplateurRef()));
+
+		table.appliquerOperateur(new DeuxPoints());
 
 		table.modifierChamp("Type", chaine -> chaine.equals("ItemAnimation:Ref<Actor>") ? "Int32" : chaine);
+
+		corrigerTable(table);
 	}
 
-	private static void enleverEnum(Contenu contenu) {
-		String nomType = contenu.getDonnees().get(3);
+	private static void corrigerTable(Table table) {
+		Map<DoubleString, DoubleString> substitutions = new HashMap<>();
 
-		if (!nomType.startsWith("Enum<") || !nomType.endsWith(">")) {
-			return;
-		}
 
-		contenu.getDonnees().set(3, "Int32");
-	}
+		DoubleString.ajouter(substitutions, "Actor", "battle_commands", "UInt32", "Tuple_7");
+		DoubleString.ajouter(substitutions, "Class", "battle_commands", "UInt32", "Tuple_7");
+		DoubleString.ajouter(substitutions, "SaveActor", "battle_commands", "UInt32", "Tuple_7");
+		DoubleString.ajouter(substitutions, "Database", "version", "Int32", "");
+		DoubleString.ajouter(substitutions, "Database", "commoneventD2", "Int32", "");
+		DoubleString.ajouter(substitutions, "Database", "commoneventD3", "Int32", "");
+		DoubleString.ajouter(substitutions, "Database", "classD1", "Int32", "");
+		DoubleString.ajouter(substitutions, "MoveRoute", "move_commands", "MoveCommand", "");
+		DoubleString.ajouter(substitutions, "SaveSystem", "variables", "Int32LittleEndian", "Vector");
 
-	private static void enleverRef(Contenu contenu) {
-		String nomType = contenu.getDonnees().get(3);
+		DoubleString.ajouter(substitutions, "EventCommand", "parameters", "Int32", "List");
 
-		if (!nomType.startsWith("Ref<") || !nomType.endsWith(">")) {
-			return;
-		}
-		nomType = nomType.substring(4, nomType.length() - 1);
+		DoubleString.ajouter(substitutions, "Parameters", "maxhp", "Int16", "Tuple_99");
+		DoubleString.ajouter(substitutions, "Parameters", "maxsp", "Int16", "Tuple_99");
+		DoubleString.ajouter(substitutions, "Parameters", "attack", "Int16", "Tuple_99");
+		DoubleString.ajouter(substitutions, "Parameters", "defense", "Int16", "Tuple_99");
+		DoubleString.ajouter(substitutions, "Parameters", "spirit", "Int16", "Tuple_99");
+		DoubleString.ajouter(substitutions, "Parameters", "agility", "Int16", "Tuple_99");
 
-		if (nomType.contains(":")) {
-			nomType = nomType.split(":")[1];
-		} else {
-			nomType = "Int32";
-		}
+		DoubleString.ajouter(substitutions, "TreeMap", "tree_order", "Int32", "List");
 
-		contenu.getDonnees().set(3, nomType);
-	}
-
-	private static void disposer(Contenu contenu, String typeCpp, String disposition) {
-		String nomType = contenu.getDonnees().get(3);
-
-		if (!nomType.startsWith(typeCpp + "<") || !nomType.endsWith(">")) {
-			return;
-		}
-
-		nomType = nomType.substring(typeCpp.length() + 1, nomType.length() - 1);
-
-		contenu.getDonnees().set(3, nomType);
-		contenu.getDonnees().set(4, disposition);
+		table.appliquerOperateur(new Remplaceur(substitutions));
 	}
 
 
@@ -103,7 +97,7 @@ public class Main {
 
 
 	private static Contenu creerContenu(String ligne) {
-		String[] champs = ligne.split(",");
+		String[] champs = ligne.split(",", -1);
 
 		List<String> donnees = new ArrayList<>();
 
