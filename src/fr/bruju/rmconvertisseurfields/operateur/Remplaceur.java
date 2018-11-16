@@ -27,6 +27,12 @@ public class Remplaceur implements Operateur {
 
 	@Override
 	public void appliquerAContenu(Contenu contenu) {
+		String type = contenu.getDonnee(posType);
+
+		if (type.endsWith("SizeField")) {
+			return;
+		}
+
 		String structure = contenu.getDonnee(posStructure);
 		String field = contenu.getDonnee(posField);
 
@@ -34,12 +40,8 @@ public class Remplaceur implements Operateur {
 		DoubleString substitution = substitutions.remove(cle);
 
 		if (substitution != null) {
-			if (!substitution.decrementerResistance()) {
-				substitutions.put(cle, substitution);
-			} else {
-				contenu.remplacerDonnee(posType, substitution.a);
-				contenu.remplacerDonnee(posDisposition, substitution.b);
-			}
+			contenu.remplacerDonnee(posType, substitution.a);
+			contenu.remplacerDonnee(posDisposition, substitution.b);
 		}
 	}
 }
