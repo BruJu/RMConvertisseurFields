@@ -50,8 +50,9 @@ public class Main {
 
 		table.appliquerOperateur(new Detemplateur("Enum", d -> { d.type = "Int32"; }));
 		table.appliquerOperateur(new Detemplateur("Ref", new DetemplateurRef()));
-
 		table.appliquerOperateur(new DeuxPoints());
+		table.appliquerOperateur(new Detemplateur("Ref", new DetemplateurRef()));
+
 
 		table.modifierChamp("Type", chaine -> chaine.equals("ItemAnimation:Ref<Actor>") ? "Int32" : chaine);
 

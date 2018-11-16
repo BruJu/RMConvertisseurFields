@@ -30,7 +30,10 @@ public class Detemplateur implements Operateur {
 		Doublon doublon = new Doublon(type.substring(typeTemplateur.length() + 1, type.length() - 1),
 				contenu.getDonnee(colonneDisposition));
 
+		System.out.print(doublon.type + " -> ");
 		m.m(doublon);
+
+		System.out.println(doublon.type);
 
 		contenu.remplacerDonnee(colonneType, doublon.type);
 		contenu.remplacerDonnee(colonneDisposition, doublon.disposition);
