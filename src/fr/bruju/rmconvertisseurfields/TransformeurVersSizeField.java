@@ -1,16 +1,16 @@
 package fr.bruju.rmconvertisseurfields;
 
-import fr.bruju.util.table.Contenu;
+import fr.bruju.util.table.Enregistrement;
 
 import java.util.function.Consumer;
 
-public class TransformeurVersSizeField implements Consumer<Contenu> {
+public class TransformeurVersSizeField implements Consumer<Enregistrement> {
 	@Override
-	public void accept(Contenu contenu) {
-		boolean estSizeField = contenu.get("Size Field?").equals("t");
+	public void accept(Enregistrement enregistrement) {
+		boolean estSizeField = enregistrement.get("Size Field?").equals("t");
 
 		if (estSizeField) {
-			contenu.set("Type", "SizeField");
+			enregistrement.set("Type", "SizeField");
 		}
 	}
 }

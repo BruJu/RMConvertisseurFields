@@ -9,7 +9,7 @@ public class Serialisation {
 	public static String serialiserTable(Table table) {
 		StringJoiner sb = new StringJoiner("\n", "#", "");
 
-		sb.add(serialiserColonnes(table.getColonnes()));
+		sb.add(serialiserColonnes(table.getChamps()));
 
 		table.forEach(contenu -> {
 			StringJoiner sj = new StringJoiner(",");

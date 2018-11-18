@@ -2,7 +2,7 @@ package fr.bruju.rmconvertisseurfields;
 
 import fr.bruju.rmconvertisseurfields.operateurs.Detemplateur;
 import fr.bruju.rmconvertisseurfields.operateurs.NumeroteurDEntrees;
-import fr.bruju.util.table.Contenu;
+import fr.bruju.util.table.Enregistrement;
 import fr.bruju.util.table.Table;
 
 import java.io.File;
@@ -19,7 +19,7 @@ public class Main {
 	public static final String CHEMIN_DESTINATION = "A:\\javalcfreaderfields.csv";
 
 	public static void main(String[] args) {
-		Table table = new Table(new ArrayList<>());
+		Table table = new Table();
 		remplirTable(table, CHEMIN_SOURCE);
 		appliquerChaineDeTraitements(table);
 		ecrireTable(table, CHEMIN_DESTINATION);
@@ -73,12 +73,12 @@ public class Main {
 		corrigerTable(table);
 	}
 
-	private static void transformerDeuxPoints(Contenu contenu) {
-		String type = contenu.get("Type");
+	private static void transformerDeuxPoints(Enregistrement enregistrement) {
+		String type = enregistrement.get("Type");
 		int position = type.indexOf(":");
 
 		if (position != -1) {
-			contenu.set("Type", type.substring(position + 1));
+			enregistrement.set("Type", type.substring(position + 1));
 		}
 	}
 

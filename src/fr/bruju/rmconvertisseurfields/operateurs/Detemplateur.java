@@ -1,10 +1,10 @@
 package fr.bruju.rmconvertisseurfields.operateurs;
 
-import fr.bruju.util.table.Contenu;
+import fr.bruju.util.table.Enregistrement;
 
 import java.util.function.Consumer;
 
-public abstract class Detemplateur implements Consumer<Contenu> {
+public abstract class Detemplateur implements Consumer<Enregistrement> {
 	private final String template;
 
 	public Detemplateur(String template) {
@@ -12,16 +12,16 @@ public abstract class Detemplateur implements Consumer<Contenu> {
 	}
 
 	@Override
-	public void accept(Contenu contenu) {
-		String type = contenu.get("Type");
+	public void accept(Enregistrement enregistrement) {
+		String type = enregistrement.get("Type");
 
 		if (type.startsWith(template) && type.endsWith(">")) {
-			contenu.set("Type", type.substring(template.length(), type.length() - 1));
-			actionDeTemplatage(contenu);
+			enregistrement.set("Type", type.substring(template.length(), type.length() - 1));
+			actionDeTemplatage(enregistrement);
 		}
 	}
 
-	protected abstract void actionDeTemplatage(Contenu contenu);
+	protected abstract void actionDeTemplatage(Enregistrement enregistrement);
 
 
 	public static class ExtracteurDeDisposition extends Detemplateur {
@@ -32,8 +32,8 @@ public abstract class Detemplateur implements Consumer<Contenu> {
 			this.template = template;
 		}
 
-		protected final void actionDeTemplatage(Contenu contenu) {
-			contenu.set("Disposition", template);
+		protected final void actionDeTemplatage(Enregistrement enregistrement) {
+			enregistrement.set("Disposition", template);
 		}
 	}
 
@@ -46,8 +46,8 @@ public abstract class Detemplateur implements Consumer<Contenu> {
 		}
 
 		@Override
-		protected void actionDeTemplatage(Contenu contenu) {
-			contenu.set("Type", typeForce);
+		protected void actionDeTemplatage(Enregistrement enregistrement) {
+			enregistrement.set("Type", typeForce);
 		}
 	}
 
@@ -57,14 +57,14 @@ public abstract class Detemplateur implements Consumer<Contenu> {
 		}
 
 		@Override
-		protected void actionDeTemplatage(Contenu contenu) {
-			String type = contenu.get("Type");
+		protected void actionDeTemplatage(Enregistrement enregistrement) {
+			String type = enregistrement.get("Type");
 			int position = type.indexOf(":");
 
 			if (position == -1) {
-				contenu.set("Type", "Int32");
+				enregistrement.set("Type", "Int32");
 			} else {
-				contenu.set("Type", type.substring(position + 1));
+				enregistrement.set("Type", type.substring(position + 1));
 			}
 		}
 	}
