@@ -1,5 +1,7 @@
 package fr.bruju.rmconvertisseurfields;
 
+import fr.bruju.rmconvertisseurfields.operateurs.Detemplateur;
+import fr.bruju.rmconvertisseurfields.operateurs.NumeroteurDEntrees;
 import fr.bruju.util.table.Contenu;
 import fr.bruju.util.table.Table;
 
@@ -10,8 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class Main {
@@ -58,40 +58,18 @@ public class Main {
 	private static void appliquerChaineDeTraitements(Table table) {
 		table.retirerChamp("PersistIfDefault");
 		table.retirerChamp("Is2k3");
-		table.insererChamp(0, "Ligne", new Function<Contenu, Object>() {
-			private int idLigne = 1;
-
-			@Override
-			public Object apply(Contenu contenu) {
-				return Integer.toString(idLigne++);
-			}
-		});
-
-		table.forEach(contenu -> {
-			boolean estSizeField = contenu.get("Size Field?").equals("t");
-
-			if (estSizeField) {
-				contenu.set("Type", "SizeField");
-			}
-		});
-
+		table.insererChamp(0, "Ligne", new NumeroteurDEntrees());
+		table.forEach(new TransformeurVersSizeField());
 		table.retirerChamp("Size Field?");
-
 		table.transformerUnChamp("Default Value", Main::retirerDefautRm2k);
-
-		table.insererChamp(table.getPosition("Type") + 1, "Disposition", c -> "");
-
-		table.forEach(disposeur("Vector"));
-		table.forEach(disposeur("Array"));
-		table.forEach(chaineurParPrefixe("Enum", contenu -> contenu.set("Type", "Int32")));
-
-
-		table.forEach(chaineurParPrefixe("Ref", Main::appliquerTransformationDeRef));
+		table.insererChampApres("Type", "Disposition", c -> "");
+		table.forEach(new Detemplateur.ExtracteurDeDisposition("Vector"));
+		table.forEach(new Detemplateur.ExtracteurDeDisposition("Array"));
+		table.forEach(new Detemplateur.ForceurDeType("Enum", "Int32"));
+		table.forEach(new Detemplateur.Dereferenceur());
 		table.forEach(Main::transformerDeuxPoints);
-		table.forEach(chaineurParPrefixe("Ref", Main::appliquerTransformationDeRef));
-
+		table.forEach(new Detemplateur.Dereferenceur());
 		table.transformerUnChamp("Type", chaine -> chaine.equals("ItemAnimation:Ref<Actor>") ? "Int32" : chaine);
-
 		corrigerTable(table);
 	}
 
@@ -104,20 +82,10 @@ public class Main {
 		}
 	}
 
-	private static void appliquerTransformationDeRef(Contenu contenu) {
-		String type = contenu.get("Type");
-		int position = type.indexOf(":");
-
-		if (position == -1) {
-			contenu.set("Type", "Int32");
-		} else {
-			contenu.set("Type", type.substring(position + 1));
-		}
-	}
 
 	private static void ecrireTable(Table table, String cheminDestination) {
 		File f = new File(cheminDestination);
-		String s = serialiser(table);
+		String s = Serialisation.serialiserTable(table);
 
 		try {
 			f.createNewFile();
@@ -129,32 +97,6 @@ public class Main {
 		}
 	}
 
-	private static String serialiser(Table table) {
-		StringJoiner sb = new StringJoiner("\n", "#", "");
-
-		sb.add(serialiser(table.getColonnes()));
-
-		table.forEach(contenu -> {
-			StringJoiner sj = new StringJoiner(",");
-			contenu.reconstruireObjet((champ, objet) -> {
-				sj.add((String) objet);
-			});
-
-			sb.add(sj.toString());
-		});
-
-		return sb.toString();
-	}
-
-	private static String serialiser(List<String> colonnes) {
-		StringJoiner sj = new StringJoiner(",");
-
-		for (String colonne : colonnes) {
-			sj.add(colonne);
-		}
-
-		return sj.toString();
-	}
 
 
 	private static Object retirerDefautRm2k(Object defaut) {
@@ -168,24 +110,8 @@ public class Main {
 	}
 
 
-	private static Consumer<Contenu> chaineurParPrefixe(String prefixe, Consumer<Contenu> consumer) {
-		return contenu -> {
-			String type = contenu.get("Type");
-
-			if (type.startsWith(prefixe + "<") && type.endsWith(">")) {
-				contenu.set("Type", type.substring(prefixe.length() + 1, type.length() - 1));
-				consumer.accept(contenu);
-			}
-		};
-	}
-
-	private static Consumer<Contenu> disposeur(String prefixe) {
-		return chaineurParPrefixe(prefixe, contenu -> contenu.set("Disposition", prefixe));
-	}
-
 	private static void corrigerTable(Table table) {
 		Map<DoubleString, DoubleString> substitutions = new HashMap<>();
-
 
 		DoubleString.ajouter(substitutions, "Actor", "battle_commands", "UInt32", "Tuple_7");
 		DoubleString.ajouter(substitutions, "Class", "battle_commands", "UInt32", "Tuple_7");
