@@ -1,6 +1,7 @@
 package fr.bruju.rmconvertisseurfields;
 
 import fr.bruju.rmconvertisseurfields.operateur.*;
+import fr.bruju.util.table.Contenu_;
 import fr.bruju.util.table.Table_;
 
 import java.io.File;
@@ -10,6 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class Main {
@@ -54,27 +57,63 @@ public class Main {
 	}
 
 	private static void appliquerChaineDeTraitements(Table_ table) {
-		//table.retirerChamp(table.getPosition("PersistIfDefault"));
-		/*
+		table.retirerChamp("PersistIfDefault");
 		table.retirerChamp("Is2k3");
-		table.ajouterLigne();
-		table.appliquerOperateur(new IntegrationSizeField());
-		table.insererChampApres("Type", "Disposition");
-		table.modifierChamp("Default Value", Main::retirerDefautRm2k);
+		table.insererChamp(0, "Ligne", new Function<Contenu_, Object>() {
+			private int idLigne = 1;
 
-		table.appliquerOperateur(new Detemplateur("Vector", new DetemplateurDisposeur("Vector")));
-		table.appliquerOperateur(new Detemplateur("Array", new DetemplateurDisposeur("Array")));
+			@Override
+			public Object apply(Contenu_ contenu_) {
+				return Integer.toString(idLigne++);
+			}
+		});
 
-		table.appliquerOperateur(new Detemplateur("Enum", d -> { d.type = "Int32"; }));
-		table.appliquerOperateur(new Detemplateur("Ref", new DetemplateurRef()));
-		table.appliquerOperateur(new DeuxPoints());
-		table.appliquerOperateur(new Detemplateur("Ref", new DetemplateurRef()));
+		table.forEach(contenu -> {
+			boolean estSizeField = contenu.get("Size Field?").equals("t");
+
+			if (estSizeField) {
+				contenu.set("Type", "SizeField");
+			}
+		});
+
+		table.retirerChamp("Size Field?");
+
+		table.transformerUnChamp("Default Value", Main::retirerDefautRm2k);
+
+		table.insererChamp(table.getPosition("Type") + 1, "Disposition", c -> "");
+
+		table.forEach(disposeur("Vector"));
+		table.forEach(disposeur("Array"));
+		table.forEach(chaineurParPrefixe("Enum", contenu -> contenu.set("Type", "Int32")));
 
 
-		table.modifierChamp("Type", chaine -> chaine.equals("ItemAnimation:Ref<Actor>") ? "Int32" : chaine);
+		table.forEach(chaineurParPrefixe("Ref", Main::appliquerTransformationDeRef));
+		table.forEach(Main::transformerDeuxPoints);
+		table.forEach(chaineurParPrefixe("Ref", Main::appliquerTransformationDeRef));
+
+		table.transformerUnChamp("Type", chaine -> chaine.equals("ItemAnimation:Ref<Actor>") ? "Int32" : chaine);
 
 		corrigerTable(table);
-		*/
+	}
+
+	private static void transformerDeuxPoints(Contenu_ contenu) {
+		String type = contenu.get("Type");
+		int position = type.indexOf(":");
+
+		if (position != -1) {
+			contenu.set("Type", type.substring(position + 1));
+		}
+	}
+
+	private static void appliquerTransformationDeRef(Contenu_ contenu) {
+		String type = contenu.get("Type");
+		int position = type.indexOf(":");
+
+		if (position == -1) {
+			contenu.set("Type", "Int32");
+		} else {
+			contenu.set("Type", type.substring(position + 1));
+		}
 	}
 
 	private static void ecrireTable(Table_ table, String cheminDestination) {
@@ -116,6 +155,78 @@ public class Main {
 		}
 
 		return sj.toString();
+	}
+
+
+	private static Object retirerDefautRm2k(Object defaut) {
+		String defautStr = (String) defaut;
+
+		if (defautStr.contains("|")) {
+			defautStr = defautStr.split("\\|")[1];
+		}
+
+		return defautStr;
+	}
+
+
+	private static Consumer<Contenu_> chaineurParPrefixe(String prefixe, Consumer<Contenu_> consumer) {
+		return contenu -> {
+			String type = contenu.get("Type");
+
+			if (type.startsWith(prefixe + "<") && type.endsWith(">")) {
+				contenu.set("Type", type.substring(prefixe.length() + 1, type.length() - 1));
+				consumer.accept(contenu);
+			}
+		};
+	}
+
+	private static Consumer<Contenu_> disposeur(String prefixe) {
+		return chaineurParPrefixe(prefixe, contenu -> contenu.set("Disposition", prefixe));
+	}
+
+	private static void corrigerTable(Table_ table) {
+		Map<DoubleString, DoubleString> substitutions = new HashMap<>();
+
+
+		DoubleString.ajouter(substitutions, "Actor", "battle_commands", "UInt32", "Tuple_7");
+		DoubleString.ajouter(substitutions, "Class", "battle_commands", "UInt32", "Tuple_7");
+		DoubleString.ajouter(substitutions, "SaveActor", "battle_commands", "UInt32", "Tuple_7");
+		DoubleString.ajouter(substitutions, "Database", "version", "Int32", "");
+		DoubleString.ajouter(substitutions, "Database", "commoneventD2", "", "");
+		DoubleString.ajouter(substitutions, "Database", "commoneventD3", "", "");
+		DoubleString.ajouter(substitutions, "Database", "classD1", "", "");
+		DoubleString.ajouter(substitutions, "MoveRoute", "move_commands", "MoveCommandSpecial", "");
+		DoubleString.ajouter(substitutions, "SaveSystem", "variables", "Int32LittleEndian", "Vector");
+
+		DoubleString.ajouter(substitutions, "EventCommand", "parameters", "Int32", "List");
+
+		DoubleString.ajouter(substitutions, "Parameters", "maxhp", "Int16", "Tuple_99");
+		DoubleString.ajouter(substitutions, "Parameters", "maxsp", "Int16", "Tuple_99");
+		DoubleString.ajouter(substitutions, "Parameters", "attack", "Int16", "Tuple_99");
+		DoubleString.ajouter(substitutions, "Parameters", "defense", "Int16", "Tuple_99");
+		DoubleString.ajouter(substitutions, "Parameters", "spirit", "Int16", "Tuple_99");
+		DoubleString.ajouter(substitutions, "Parameters", "agility", "Int16", "Tuple_99");
+
+		DoubleString.ajouter(substitutions, "TreeMap", "tree_order", "Int32", "List");
+
+		table.forEach(contenu -> {
+			String type = contenu.get("Type");
+
+			if (type.equals("SizeField")) {
+				return;
+			}
+
+			String structure = contenu.get("Structure");
+			String field = contenu.get("Field");
+
+			DoubleString cle = new DoubleString(structure, field);
+			DoubleString substitution = substitutions.remove(cle);
+
+			if (substitution != null) {
+				contenu.set("Type", substitution.a);
+				contenu.set("Disposition", substitution.b);
+			}
+		});
 	}
 
 
@@ -206,6 +317,7 @@ public class Main {
 
 		table.appliquerOperateur(new Remplaceur(substitutions));
 	}
+
 
 
 	private static String retirerDefautRm2k(String defaut) {
