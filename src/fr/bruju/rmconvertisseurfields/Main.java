@@ -1,8 +1,7 @@
 package fr.bruju.rmconvertisseurfields;
 
-import fr.bruju.rmconvertisseurfields.operateur.*;
-import fr.bruju.util.table.Contenu_;
-import fr.bruju.util.table.Table_;
+import fr.bruju.util.table.Contenu;
+import fr.bruju.util.table.Table;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -20,14 +19,14 @@ public class Main {
 	public static final String CHEMIN_DESTINATION = "A:\\javalcfreaderfields.csv";
 
 	public static void main(String[] args) {
-		Table_ table = new Table_(new ArrayList<>());
+		Table table = new Table(new ArrayList<>());
 		remplirTable(table, CHEMIN_SOURCE);
 		appliquerChaineDeTraitements(table);
 		ecrireTable(table, CHEMIN_DESTINATION);
 	}
 
 
-	private static void remplirTable(Table_ table, String cheminSource) {
+	private static void remplirTable(Table table, String cheminSource) {
 		try (Stream<String> flux = Files.lines(Paths.get(cheminSource))) {
 
 			AtomicBoolean booleen = new AtomicBoolean();
@@ -56,14 +55,14 @@ public class Main {
 		}
 	}
 
-	private static void appliquerChaineDeTraitements(Table_ table) {
+	private static void appliquerChaineDeTraitements(Table table) {
 		table.retirerChamp("PersistIfDefault");
 		table.retirerChamp("Is2k3");
-		table.insererChamp(0, "Ligne", new Function<Contenu_, Object>() {
+		table.insererChamp(0, "Ligne", new Function<Contenu, Object>() {
 			private int idLigne = 1;
 
 			@Override
-			public Object apply(Contenu_ contenu_) {
+			public Object apply(Contenu contenu) {
 				return Integer.toString(idLigne++);
 			}
 		});
@@ -96,7 +95,7 @@ public class Main {
 		corrigerTable(table);
 	}
 
-	private static void transformerDeuxPoints(Contenu_ contenu) {
+	private static void transformerDeuxPoints(Contenu contenu) {
 		String type = contenu.get("Type");
 		int position = type.indexOf(":");
 
@@ -105,7 +104,7 @@ public class Main {
 		}
 	}
 
-	private static void appliquerTransformationDeRef(Contenu_ contenu) {
+	private static void appliquerTransformationDeRef(Contenu contenu) {
 		String type = contenu.get("Type");
 		int position = type.indexOf(":");
 
@@ -116,7 +115,7 @@ public class Main {
 		}
 	}
 
-	private static void ecrireTable(Table_ table, String cheminDestination) {
+	private static void ecrireTable(Table table, String cheminDestination) {
 		File f = new File(cheminDestination);
 		String s = serialiser(table);
 
@@ -130,7 +129,7 @@ public class Main {
 		}
 	}
 
-	private static String serialiser(Table_ table) {
+	private static String serialiser(Table table) {
 		StringJoiner sb = new StringJoiner("\n", "#", "");
 
 		sb.add(serialiser(table.getColonnes()));
@@ -169,7 +168,7 @@ public class Main {
 	}
 
 
-	private static Consumer<Contenu_> chaineurParPrefixe(String prefixe, Consumer<Contenu_> consumer) {
+	private static Consumer<Contenu> chaineurParPrefixe(String prefixe, Consumer<Contenu> consumer) {
 		return contenu -> {
 			String type = contenu.get("Type");
 
@@ -180,11 +179,11 @@ public class Main {
 		};
 	}
 
-	private static Consumer<Contenu_> disposeur(String prefixe) {
+	private static Consumer<Contenu> disposeur(String prefixe) {
 		return chaineurParPrefixe(prefixe, contenu -> contenu.set("Disposition", prefixe));
 	}
 
-	private static void corrigerTable(Table_ table) {
+	private static void corrigerTable(Table table) {
 		Map<DoubleString, DoubleString> substitutions = new HashMap<>();
 
 
@@ -227,117 +226,5 @@ public class Main {
 				contenu.set("Disposition", substitution.b);
 			}
 		});
-	}
-
-
-	// =================================================================================================================
-	// =================================================================================================================
-	// =================================================================================================================
-	// =================================================================================================================
-	// =================================================================================================================
-	// =================================================================================================================
-	// =================================================================================================================
-	// =================================================================================================================
-
-
-
-
-
-
-
-
-
-	public static void main2(String[] args) {
-		Table table = new Table();
-		remplirTable(table, CHEMIN_SOURCE);
-		appliquerChaineDeTraitements(table);
-		table.ecrire(CHEMIN_DESTINATION);
-	}
-
-	private static void remplirTable(Table table, String cheminSource) {
-		try (Stream<String> flux = Files.lines(Paths.get(cheminSource))) {
-			flux.forEach(ligne -> {
-				Contenu contenu = creerContenu(ligne);
-
-				if (contenu != null) {
-					table.ajouterContenu(contenu);
-				}
-			});
-		} catch (IOException e) {
-			System.exit(1);
-		}
-	}
-
-	private static void appliquerChaineDeTraitements(Table table) {
-		table.retirerChamp("PersistIfDefault");
-		table.retirerChamp("Is2k3");
-		table.ajouterLigne();
-		table.appliquerOperateur(new IntegrationSizeField());
-		table.insererChampApres("Type", "Disposition");
-		table.modifierChamp("Default Value", Main::retirerDefautRm2k);
-
-		table.appliquerOperateur(new Detemplateur("Vector", new DetemplateurDisposeur("Vector")));
-		table.appliquerOperateur(new Detemplateur("Array", new DetemplateurDisposeur("Array")));
-
-		table.appliquerOperateur(new Detemplateur("Enum", d -> { d.type = "Int32"; }));
-		table.appliquerOperateur(new Detemplateur("Ref", new DetemplateurRef()));
-		table.appliquerOperateur(new DeuxPoints());
-		table.appliquerOperateur(new Detemplateur("Ref", new DetemplateurRef()));
-
-
-		table.modifierChamp("Type", chaine -> chaine.equals("ItemAnimation:Ref<Actor>") ? "Int32" : chaine);
-
-		corrigerTable(table);
-	}
-
-	private static void corrigerTable(Table table) {
-		Map<DoubleString, DoubleString> substitutions = new HashMap<>();
-
-
-		DoubleString.ajouter(substitutions, "Actor", "battle_commands", "UInt32", "Tuple_7");
-		DoubleString.ajouter(substitutions, "Class", "battle_commands", "UInt32", "Tuple_7");
-		DoubleString.ajouter(substitutions, "SaveActor", "battle_commands", "UInt32", "Tuple_7");
-		DoubleString.ajouter(substitutions, "Database", "version", "Int32", "");
-		DoubleString.ajouter(substitutions, "Database", "commoneventD2", "", "");
-		DoubleString.ajouter(substitutions, "Database", "commoneventD3", "", "");
-		DoubleString.ajouter(substitutions, "Database", "classD1", "", "");
-		DoubleString.ajouter(substitutions, "MoveRoute", "move_commands", "MoveCommandSpecial", "");
-		DoubleString.ajouter(substitutions, "SaveSystem", "variables", "Int32LittleEndian", "Vector");
-
-		DoubleString.ajouter(substitutions, "EventCommand", "parameters", "Int32", "List");
-
-		DoubleString.ajouter(substitutions, "Parameters", "maxhp", "Int16", "Tuple_99");
-		DoubleString.ajouter(substitutions, "Parameters", "maxsp", "Int16", "Tuple_99");
-		DoubleString.ajouter(substitutions, "Parameters", "attack", "Int16", "Tuple_99");
-		DoubleString.ajouter(substitutions, "Parameters", "defense", "Int16", "Tuple_99");
-		DoubleString.ajouter(substitutions, "Parameters", "spirit", "Int16", "Tuple_99");
-		DoubleString.ajouter(substitutions, "Parameters", "agility", "Int16", "Tuple_99");
-
-		DoubleString.ajouter(substitutions, "TreeMap", "tree_order", "Int32", "List");
-
-		table.appliquerOperateur(new Remplaceur(substitutions));
-	}
-
-
-
-	private static String retirerDefautRm2k(String defaut) {
-		if (defaut.contains("|")) {
-			defaut = defaut.split("\\|")[1];
-		}
-
-		return defaut;
-	}
-
-
-	private static Contenu creerContenu(String ligne) {
-		String[] champs = ligne.split(",", -1);
-
-		List<String> donnees = new ArrayList<>();
-
-		for (String champ : champs) {
-			donnees.add(champ);
-		}
-
-		return new Contenu(donnees);
 	}
 }
